@@ -332,10 +332,10 @@
 #include "FS.h"
 #include "SPI.h"
 #include "sys/time.h"
-#include "soc/timer_group_struct.h"
-#include "soc/timer_group_reg.h"
+//#include "soc/timer_group_struct.h"
+//#include "soc/timer_group_reg.h"
 #include "Ublox.h"
-#include "E_paper.h"
+//#include "E_paper.h"
 #include "SD_card.h"
 #include "GPS_data.h"
 #include "Arduino.h"
@@ -348,27 +348,26 @@
 #include <esp32-hal.h>
 #include <time.h>
 #include <EEPROM.h>
-#include <HardwareSerial.h>//for uart ports on S3 !!!
 #include "Rtos5.h"
-
-
-//#define SPI_MOSI 23
-//#define SPI_MISO -1//standaard is MISO GPIO 19 !!!!
-//#define SPI_CLK 18
 
 #define SDCARD_SS 14  //FSPICS0
 #define SDCARD_CLK 3 //FSPI_CLK
 #define SDCARD_MOSI 13 //FSPID
 #define SDCARD_MISO 12 //FSPI_Q
 
-// Connect the GPS RX/TX to arduino pins 32 and 33
+// Connect the GPS RX/TX to arduino pins RXD2 and TXD2
 #define RXD2 18 //geel is Tx Ublox, Beitian wit is Tx
 #define TXD2 17 //groen is Rx Ublox, Beitian groen is Rx
+#define POWER1_ubx 16
+#define POWER2_ubx 15
+#define POWER1_ubx_NUM GPIO_NUM_15
+#define POWER2_ubx_NUM GPIO_NUM_16
 #define PIN_BAT 2 //adc pin for battery measurement ADC1_CH4
+#define MINIMUM_VOLTAGE 0      // if lower then minimum_voltage, back to sleep.....
 #define CALIBRATION_BAT_V 1.7 //voor proto 1
 #define uS_TO_S_FACTOR 1000000UL /* Conversion factor for micro seconds to seconds */
-#define TIME_TO_SLEEP  4000        /* Time ESP32 will go to sleep (in seconds, max is ?) */
-#define WDT_TIMEOUT 10             //60 seconds WDT, opgelet zoeken naar ssid time-out<dan 10s !!!
+#define TIME_TO_SLEEP  4000UL        /* Time ESP32 will go to sleep (in seconds, max is ?) */
+#define WDT_TIMEOUT 60             //60 seconds WDT, opgelet zoeken naar ssid time-out<dan 10s !!!
 
 #define MIN_numSV_FIRST_FIX 5     //alvorens start loggen, changed from 4 to 5 7.1/2023
 #define MAX_Sacc_FIRST_FIX 2     //alvorens start loggen
@@ -377,17 +376,8 @@
 #define MAX_GPS_SPEED_OK 40       //max snelheid in m/s voor berekenen snelheid, anders 0
 #define EEPROM_SIZE 1             //use 1 byte in eeprom for saving type of ublox
 String IP_adress="0.0.0.0";
-const char SW_version[16]="Ver 5.76a";//Hier staat de software versie !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-#if defined(_GxGDEH0213B73_H_) 
-const char E_paper_version[16]="E-paper 213B73";
-#endif
-#if defined(_GxDEPG0213BN_H_) 
-const char E_paper_version[16]="E-paper 213BN";
-#endif
-#if defined(_GxGDEM0213B74_H_) 
-const char E_paper_version[16]="E-paper 213B74";
-#endif
+const char SW_version[16]="Ver 6.0";//Hier staat de software versie !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+const char ESP_type[16]="T7-S3";
 char Ublox_type[20]="Ublox unknown...";
 
 int sdTrouble=0;
@@ -477,26 +467,30 @@ GPS_time S3600(3600);
 Alfa_speed A250(50);
 Alfa_speed A500(50);
 Alfa_speed a500(50);//for  Alfa stats GPIO_12 screens, reset possible !!
+class Button_push{
+            public:
+            Button_push(int GPIO_pin,int push_time,int long_pulse_time,int max_count);//constructor
+            boolean Button_pushed(void);//return true if button is pushed longer then push_time
+            boolean long_pulse;
+            int button_count;
+            private:
+            boolean button_status, old_button_status,return_value;
+            int Input_pin;
+            int push_millis; 
+            int time_out_millis; 
+            int millis_10s;
+            int max_pulse_time; 
+            int max_button_count;        
+};
 Button_push Short_push12 (12,100,15,1); //GPIO12 pull up, 100ms push time, 15s long_pulse, count 1, STAT screen 4&5
 Button_push Long_push12 (12,2000,10,4); //GPIO12 pull up, 2000ms push time, 10s long_pulse, count 4, reset STAT screen 4&5
 Button_push Short_push39 (WAKE_UP_GPIO,100,10,8);//was 39
 Button_push Long_push39 (WAKE_UP_GPIO,1500,10,8);//was 39
 
-#if defined(_GxDEPG0266BN_H_) //only for screen BN266, Rolzz... !!!
-GxIO_Class io(SPI, /*CS=5*/ ELINK_SS, /*DC=*/ 19, /*RST=*/4);
-GxEPD_Class display(io, /*RST=*/4, /*BUSY=*/34);
-#else
-GxIO_Class io(SPI, /*CS=5*/ ELINK_SS, /*DC=*/ ELINK_DC, /*RST=*/ ELINK_RESET);
-GxEPD_Class display(io, /*RST=*/ ELINK_RESET, /*BUSY=*/ ELINK_BUSY);
-#endif
-
 SPIClass sdSPI(FSPI);//was VSPI
-
-//HardwareSerial Serial2(0);
 
 const char *filename = "/config.txt";
 const char *filename_backup = "/config_backup.txt"; 
-//Config config;  
   /*
 Method to print the reason by which ESP32 has been awaken from sleep
 */
@@ -506,9 +500,7 @@ void print_wakeup_reason(){
   Serial.print("Battery voltage = ");
   Serial.println(RTC_voltage_bat);
   if(RTC_voltage_bat<MINIMUM_VOLTAGE){
-    //Boot_screen();
     delay(1000);
-    //Sleep_screen(RTC_SLEEP_screen);
     esp_sleep_enable_ext0_wakeup(GPIO_NUM_xx,0);
     go_to_sleep(4000);
   }
@@ -529,7 +521,6 @@ void print_wakeup_reason(){
                                  rtc_gpio_deinit(GPIO_NUM_xx);//was 39   
                                  reed=1;   
                                  esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_ALL);
-                                 //Boot_screen();
                                  break;
     case ESP_SLEEP_WAKEUP_EXT1 : Serial.println("Wakeup caused by external signal using RTC_CNTL"); 
                                  break;
@@ -538,9 +529,7 @@ void print_wakeup_reason(){
                                   for(int i=0;i<10;i++){
                                         Update_bat();
                                         }
-                                  //RTC_voltage_bat=analog_mean*calibration_bat/1000;
                                   esp_sleep_enable_ext0_wakeup(GPIO_NUM_xx,0); //was 39  1 = High, 0 = Low
-                                  //Sleep_screen(RTC_SLEEP_screen);
                                   go_to_sleep(3000); //was 4000
                                   break;                               
     case ESP_SLEEP_WAKEUP_TOUCHPAD : Serial.println("Wakeup caused by touchpad"); 
@@ -548,7 +537,6 @@ void print_wakeup_reason(){
     case ESP_SLEEP_WAKEUP_ULP : Serial.println("Wakeup caused by ULP program"); 
                                 break;
     default : Serial.printf("Wakeup was not caused by deep sleep: %d\n",wakeup_reason); 
-              //Boot_screen();
               break;
     }
 }
@@ -624,19 +612,7 @@ void printLocalTime(){
   Serial.print("NTP Time = ");
   Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
 }  
-//For RTOS, the watchdog has to be triggered
-/*
-void feedTheDog_Task0(){
-  TIMERG0.wdtwprotect=0x50D83AA1; // write enable TIMERG0.wdt_wprotect=TIMG_WDT_WKEY_VALUE;
-  TIMERG0.wdtfeed=1;                       // feed dog
-  TIMERG0.wdtwprotect=TIMG_WDT_WKEY_S;                   // write protect
-}
-void feedTheDog_Task1(){ 
-  TIMERG1.wdtwprotect=0x50D83AA1; // write enable
-  TIMERG1.wdtfeed=1;                       // feed dog
-  TIMERG1.wdtwprotect=TIMG_WDT_WKEY_S;                   // write protect
-} 
-*/
+
 void OnWiFiEvent(WiFiEvent_t event){
   switch (event) {
     case SYSTEM_EVENT_STA_CONNECTED:
@@ -686,43 +662,63 @@ static void setTimeZone(long offset, int daylight)
     setenv("TZ", tz, 1);
     tzset();
 }
+/*Eenmaal flankdetectie indien GPIO langer dan push_time gedrukt
+* Ook variabele die dan long_pulse_time hoog blijft
+* Ook variabele die optelt tot maw elke keer push
+*/
+    Button_push::Button_push(int GPIO_pin,int push_time,int long_pulse_time,int max_count){
+    pinMode(GPIO_pin,INPUT_PULLUP);
+    Input_pin=GPIO_pin;
+    time_out_millis=push_time;
+    max_pulse_time=long_pulse_time;
+    max_button_count=max_count;
+  }
+  boolean Button_push::Button_pushed(void){
+  return_value=false;
+  button_status=digitalRead(Input_pin);
+  if(digitalRead(Input_pin)==1) push_millis=millis();
+  if(((millis()-push_millis)>time_out_millis)&(old_button_status==0)){
+    Serial.print ("Class button push ");
+    Serial.println (millis()-push_millis);
+    if (long_pulse) button_count++;
+    if(button_count>max_button_count)button_count=0;
+    old_button_status=1;
+    millis_10s=millis();
+    return_value=true;
+  }
+  else return_value=false; 
+  if((millis()-millis_10s)<(1000*max_pulse_time)) long_pulse=true;
+  else long_pulse=false; 
+  if(digitalRead(Input_pin)==1) old_button_status=0;
+  return return_value;
+}
+
 void setup() {
   EEPROM.begin(EEPROM_SIZE);
   config.ublox_type = EEPROM.read(0);
   Serial.begin(115200);
    while (!Serial) {
-    ; // wait for serial port to connect. Needed for native USB port only
+    ; // wait for serial port to connect. Needed for native USB port only on the S3
   }
-  Serial.println("setup Serial");
-  Serial.println("Serial Txd is on pin: "+String(TX));
-  Serial.println("Serial Rxd is on pin: "+String(RX));
-  // And configure MySerial2 on pins RX=D9, TX=D10
- // Serial2.begin(9600, SERIAL_8N1, 18, 17);
- // Serial2.print("MySerial2");
-
+  Serial.println("setup Serial over USB ! ");
+ 
   static const int spiClk = 1000000; // 1 MHz
-
-  //SPI.begin(SPI_CLK, SPI_MISO, SPI_MOSI, ELINK_SS); //SPI is used for SD-card and for E_paper display !
   sdSPI.begin(SDCARD_CLK, SDCARD_MISO, SDCARD_MOSI, SDCARD_SS);//default 20 MHz gezet worden !
   print_wakeup_reason(); //Print the wakeup reason for ESP32, go back to sleep is timer is wake-up source !
- //sometimes after OTA hangs here ???
-  pinMode(15, OUTPUT);//Power beitian //default drive strength 2, only 2.7V @ ublox gps
-  pinMode(16, OUTPUT);//Power beitian
-  //pinMode(18, OUTPUT);//Power beitian
- rtc_gpio_set_drive_capability(GPIO_NUM_15,GPIO_DRIVE_CAP_3);//see https://www.esp32.com/viewtopic.php?t=5840
- rtc_gpio_set_drive_capability(GPIO_NUM_16,GPIO_DRIVE_CAP_3);//3.0V @ ublox gps current 50 mA
- //gpio_set_drive_capability(GPIO_NUM_18,GPIO_DRIVE_CAP_3);//rtc_gpio_ necessary, if not no output on RTC_pins 25 en 26, 13/3/2022
+
+  pinMode(POWER1_ubx, OUTPUT);//Power beitian //default drive strength 2, only 2.7V @ ublox gps
+  pinMode(POWER2_ubx, OUTPUT);//Power beitian
   
-  Ublox_on();//beitian bn220 power supply over output 15, 16, 18
-  //Serial2.setRxBufferSize(1024); // increasing buffer size ?
+ rtc_gpio_set_drive_capability(POWER1_ubx_NUM,GPIO_DRIVE_CAP_3);//see https://www.esp32.com/viewtopic.php?t=5840
+ rtc_gpio_set_drive_capability(POWER2_ubx_NUM,GPIO_DRIVE_CAP_3);//3.0V @ ublox gps current 50 mA 
+  Ublox_on();//beitian bn220 power supply over output 15, 16
+  Serial2.setRxBufferSize(1024); // increasing buffer size ?
   if((config.ublox_type==M8_38400BD)|(config.ublox_type==M9_38400BD)|  (config.ublox_type==M10_38400BD)){
     Serial2.begin(38400, SERIAL_8N1, RXD2, TXD2); //connection to ublox over Serial2 
-    //while(!Serial2) {};
     Serial.println("Serial 2 on 38400 bd");
     }
   else{
    Serial2.begin(9600, SERIAL_8N1, RXD2, TXD2); //connection to ublox over Serial2
-   //while(!Serial2) {};
    Serial.println("Serial 2 on 9600 bd");
    }   
   Serial.println("Serial2 Txd is on pin: "+String(TXD2));
@@ -735,7 +731,6 @@ void setup() {
      }
   
   sdSPI.begin(SDCARD_CLK, SDCARD_MISO, SDCARD_MOSI, SDCARD_SS);//default 20 MHz gezet worden !
-
   struct timeval tv = { .tv_sec =  0, .tv_usec = 0 };
   settimeofday(&tv, NULL);
   if (!SD.begin(SDCARD_SS, sdSPI)) {
@@ -747,7 +742,6 @@ void setup() {
         uint64_t totalBytes=SD.totalBytes() / (1024 * 1024);
         uint64_t usedBytes=SD.usedBytes() / (1024 * 1024);
         freeSpace=totalBytes-usedBytes;
-        //Boot_screen();
         Serial.printf("SD Card Size: %lluMB\n", cardSize); 
         Serial.printf("SD Total bytes: %lluMB\n", totalBytes); 
         Serial.printf("SD Used bytes: %lluMB\n", usedBytes); 
@@ -792,7 +786,6 @@ void setup() {
   if((config.ublox_type==M9_9600BD)|(config.ublox_type==M9_38400BD)|(config.ublox_type==M10_9600BD)|(config.ublox_type==M10_38400BD)){
       Set_rate_ubloxM10(config.sample_rate);//after reading config file !! 
       }  
- // Update_screen(BOOT_SCREEN);
   
   const char* ssid = config.ssid; //WiFi SSID
   const char* password = config.password; //WiFi Password
@@ -827,10 +820,7 @@ void setup() {
             Serial.println("Set AP Counter to 100");
           }
         }
-    //if(wifi_search<=10) Update_screen(WIFI_STATION);
-    //else Update_screen(WIFI_SOFT_AP);
     delay(1000);
-    //esp_err_t result=esp_task_wdt_reset();
     Serial.print(".");
     wifi_search--;
     if(wifi_search<=0){
@@ -855,7 +845,6 @@ void setup() {
       WiFi.mode(WIFI_OFF);
       Wifi_on=false;      
   }
-  //analog_mean=RTC_voltage_bat/calibration_bat*1000;//RTC_voltage_bat staat in RTC mem !!!
   delay(100);
    //Create RTOS task, so logging and e-paper update are separated (update e-paper is blocking, 800 ms !!)
   xTaskCreate(
@@ -889,23 +878,18 @@ void loop() {
   int wdt_task1_duration=millis()-wdt_task1;
   int task_timeout=(WDT_TIMEOUT -1)*1000;//1 second less then reboot timeout 
   if((wdt_task0_duration<task_timeout)&(wdt_task1_duration<task_timeout)){
-    esp_err_t result = esp_task_wdt_init(WDT_TIMEOUT, true);
-    //feedTheDog_Task0();
-   // feedTheDog_Task1();
-    Serial.println(result);
+    esp_err_t result = esp_task_wdt_init(WDT_TIMEOUT, true);//only way I found to reset the watchdog timer....
+    //Serial.println(result);
     delay(1000);
     }
   if((wdt_task0_duration>task_timeout)&(downloading_file)) {
-    //feedTheDog_Task0();
     wdt_task0=millis();
     Serial.println("Extend watchdog_timeout due long download"); 
     }     
   if((wdt_task0_duration>task_timeout)&(!downloading_file)) Serial.println("Watchdog task0 triggered");
   if(wdt_task1_duration>task_timeout) Serial.println("Watchdog task1 triggered");
    
-  //Update_bat();
   delay(100); 
-  //if(gps_speed>4000) Ublox_off();//test voor foutmelding vanaf 4m/s
 }
 
 void taskOne( void * parameter )
@@ -1062,33 +1046,12 @@ void taskTwo( void * parameter)
     if(RTC_voltage_bat<MINIMUM_VOLTAGE) low_bat_count++;
     else low_bat_count=0;
     if(long_push==true){
-        //Off_screen(RTC_OFF_screen);
        // Shut_down();
     }
     else if(low_bat_count>10){
         RTC_OFF_screen=1;//Simon screen with info text !!!
-        //Off_screen(RTC_OFF_screen);
        // Shut_down();
     }
-    /*
-    else if(millis()<2000)Update_screen(BOOT_SCREEN);
-    else if(GPS_Signal_OK==false) Update_screen(WIFI_ON);
-    else if(Time_Set_OK==false) Update_screen(WIFI_ON);
-    #if defined (GPIO12_ACTIF)
-    else if(Short_push12.long_pulse){Update_screen(config.gpio12_screen[GPIO12_screen]);}//heeft voorrang, na drukken GPIO_pin 12, 10 STAT4 scherm !!!
-    #endif
-    else if((gps_speed/1000.0f<config.stat_speed)&(Field_choice==false)){
-          Update_screen(config.stat_screen[stat_count]);
-          }
-    else if((millis()-last_gps_msg)>time_out_nav_pvt) Update_screen(TROUBLE);
-    else {
-          if(config.speed_large_font==2){
-            Update_screen(SPEED2);
-          } else {
-            Update_screen(SPEED);
-          }
-          stat_count=0;
-          }
-    */      
+   
   }
 }

@@ -7,7 +7,7 @@
 #include "OTA_html.h"
 bool downloading_file=false;
 const char* host = "esp32";
-extern const char E_paper_version[16];
+extern const char ESP_type[16];
 WebServer server(80);
 
 //SD Card webinterface download section
@@ -449,7 +449,7 @@ String style =
 /* Login page */
 void makeLoginString(void){
   String  actual_SW=SW_version;
-  String e_type=E_paper_version;
+  String e_type=ESP_type;
   loginIndex = "";
   loginIndex += F("<form name=loginForm>");
   loginIndex += F("<h1>ESP32 Login</h1>");
