@@ -379,59 +379,10 @@ void html_config(String& webpage){
   if(config.logUBX_nav_sat == 1) webpage += "<option value='1' selected>LOG UBX NAV SAT ON</option>\n"; else webpage += "<option value='1'>LOG UBX NAV SAT ON</option>\n";
   if(config.logUBX_nav_sat == 0) webpage += "<option value='0' selected>LOG UBX NAV SAT OFF</option>\n"; else webpage += "<option value='0'>LOG UBX NAV SAT OFF</option>\n";
   webpage += "</select>\n</td><td>logUBX_nav_sat: To save the GPS NAV SAT data in ubx format. For every 10 (20Hz : 40) nav_pvt messages, 1 nav_sat message is saved. This can be used to evaluate the signal quality of your gps (ucenter).</td>\n</tr>\n";  
-  //speed_field
-  webpage += "<tr><td>speed_field</td><td>\n<select id='speed_field' name='speed_field'>\n";
-  if(config.field == 1) webpage += "<option value='1' selected>1</option>\n"; else webpage += "<option value='1'>1</option>\n";
-  if(config.field == 2) webpage += "<option value='2' selected>2</option>\n"; else webpage += "<option value='2'>2</option>\n";
-  if(config.field == 3) webpage += "<option value='3' selected>3</option>\n"; else webpage += "<option value='3'>3</option>\n";
-  if(config.field == 4) webpage += "<option value='4' selected>4</option>\n"; else webpage += "<option value='4'>4</option>\n";
-  if(config.field == 5) webpage += "<option value='5' selected>5</option>\n"; else webpage += "<option value='5'>5</option>\n";
-  if(config.field == 6) webpage += "<option value='6' selected>6</option>\n"; else webpage += "<option value='6'>6</option>\n";
-  if(config.field == 7) webpage += "<option value='7' selected>7</option>\n"; else webpage += "<option value='7'>7</option>\n";
-  if(config.field == 8) webpage += "<option value='8' selected>8</option>\n"; else webpage += "<option value='8'>8</option>\n";
-  webpage += "</select>\n</td><td>speed_field: The preferred value in the first line of the speed screen : 1=Auto switching between Run, Alfa & NM, 2=Run & NM, 3=Alfa, 4=NM, 5= Total distance, 6= 2s/10s, 7= Auto switching between Alfa & 0.5h, 8= Auto switching between Alfa & 1h</td>\n</tr>\n";
-   //speed_large_font
-  webpage += "<tr><td>speed_large_font</td><td>\n<select id='speed_large_font' name='speed_large_font'>\n";
-  if(config.speed_large_font == 2) webpage += "<option value='2' selected>Simon_Font ON</option>\n"; else webpage += "<option value='2'>Simon Font ON</option>\n";
-  if(config.speed_large_font == 1) webpage += "<option value='1' selected>Large_Font ON</option>\n"; else webpage += "<option value='1'>Large Font ON</option>\n";
-  if(config.speed_large_font == 0) webpage += "<option value='0' selected>Large Font OFF</option>\n"; else webpage += "<option value='0'>Large Font OFF</option>\n";
-  webpage += "</select>\n</td><td>speed_large_font: To choose the font sizes of the first line in the speed screen. Choice 0 = small, 1 = medium, 2 = large.</td>\n</tr>\n";  
-  //bar_length
-  webpage += "<tr>\n<td>bar_length</td><td>\n";
-  webpage += "<input size='8' type='number' required name='bar_length' min='100' max='10000' value="+String(config.bar_length)+" step='1'>\n";
-  webpage += "</select>\n</td><td>bar_length: Default length = 1852 m for 100% bar (=Nautical mile)</td>\n</tr>\n";
-  //Stat_screens
-  webpage += "<tr>\n<td>Stat_screens</td><td>\n";
-  webpage += "<input size='8' type='number' required name='Stat_screens' min='0' max='9999' value="+String(config.Stat_screens_persist)+" step='1'>\n";
-  webpage += "</select>\n</td><td>Stat_screens choice : every digit shows the according stat_screen after each other</td>\n</tr>\n";
-  //Stat_screens_time
-  webpage += "<tr>\n<td>Stat_screens_time</td><td>\n";
-  webpage += "<input size='8' type='number' required name='Stat_screens_time' min='2' max='10' value="+String(config.Stat_screens_time)+" step='1'>\n";
-  webpage += "</select>\n</td><td>The time between toggle the different stat screens</td>\n</tr>\n";
-  //Stat_speed
-  webpage += "<tr>\n<td>stat_speed</td><td>\n";
-  webpage += "<input size='8' type='number' required name='stat_speed' min='0' max='1000' value="+String(config.stat_speed)+" step='1'>\n";
-  webpage += "</select>\n</td><td>If the actual speed(in m/s) is less then this stat_speed, stat_screens are active</td>\n</tr>\n";
   //Archive_days
   webpage += "<tr>\n<td>archive_days</td><td>\n";
   webpage += "<input size='8' type='number' required name='archive_days' min='0' max='1000' value="+String(config.archive_days)+" step='1'>\n";
   webpage += "</select>\n</td><td>If the files on the sd are older then archive_days, they can be moved to the Archive directory with \"Archive Files\"</td>\n</tr>\n";
-  //GPIO12_screens
-  webpage += "<tr>\n<td>GPIO12_screens</td><td>\n";
-  webpage += "<input size='8' type='number' required name='GPIO12_screens' min='0' max='1000' value="+String(config.GPIO12_screens_persist)+" step='1'>\n";
-  webpage += "</select>\n</td><td>GPIO12_screens choice : Every digit shows the according GPIO_screen after each push. Screen 4 = s10 runs, screen 5 = alfa's.</td>\n</tr>\n";
-  //Board_Logo
-  webpage += "<tr>\n<td>Board_Logo</td><td>\n";
-  webpage += "<input size='8' type='number' required name='Board_Logo' min='0' max='20' value="+String(config.Board_Logo)+" step='1'>\n";
-  webpage += "</select>\n</td><td>Board_Logo: from 1 - 20. See the info on <a href='https://www.seabreeze.com.au/img/photos/windsurfing/19565287.jpg' target='_blank'>this Link</a> >10 are different single logos</td>\n</tr>\n";
-  //Sail_Logo
-  webpage += "<tr>\n<td>Sail_Logo</td><td>\n";
-  webpage += "<input size='8' type='number' required name='Sail_Logo' min='0' max='20' value="+String(config.Sail_Logo)+" step='1'>\n";
-  webpage += "</select>\n</td><td>Sail_Logo: from 1 - 20. See the info on <a href='https://www.seabreeze.com.au/img/photos/windsurfing/19565287.jpg' target='_blank'>this Link</a> >10 are different single logos</td>\n</tr>\n";
-  //sleep_off_screen
-  webpage += "<tr>\n<td>sleep_off_screen</td><td>\n";
-  webpage += "<input size='8' type='number' required name='sleep_off_screen' min='0' max='1000' value="+String(config.sleep_off_screen)+" step='1'>\n";
-  webpage += "</select>\n</td><td>Choice for switch_off (first digit 0 or 1) and sleep_screen (second digit 0 or 1): </td>\n</tr>\n";
   //logTXT
   webpage += "<tr><td>logTXT</td><td>\n<select id='logTXT' name='logTXT'>\n";
   if(config.logTXT == 1) webpage += "<option value='1' selected>LOG TXT ON</option>\n"; else webpage += "<option value='1'>LOG TXT ON</option>\n";

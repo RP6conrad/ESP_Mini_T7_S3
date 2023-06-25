@@ -4,7 +4,7 @@
 *   for higher accuracy, change of datatypes to double
 *   All speeds are now in mm/s (format double)
 *   Added STATS3 screen with M100/M500, config.Stat_screens 6
-*   Added Rtos5.h for general #define
+*   Added ESP_Mini.h for general #define
 *   Bugfix in new_run_detection, speed m/s -> mm/s
 *   Start logging if speed>MIN_SPEED_START_LOGGING, now 2m/s
 *   Added log files in oao format

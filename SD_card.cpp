@@ -1,6 +1,6 @@
 #include "SD_card.h"
 #include <SD.h>
-#include "Rtos5.h"
+#include "ESP_Mini.h"
 #include "gpx.h"
 #include "sbp.h"
 #include "gpy.h"
@@ -201,17 +201,8 @@ void loadConfiguration(const char *filename, const char *filename_backup, Config
   config.gnss = doc["gnss"]|2;
   config.field = doc["speed_field"]|1;
   config.speed_large_font=doc["speed_large_font"]|0;
-  config.bar_length = doc["bar_length"]|1852;
-  config.Stat_screens = doc["Stat_screens"]|12;
-  config.Stat_screens_time = doc["Stat_screens_time"]|2;
-  config.stat_speed= doc["stat_speed"]|1;
+  config.bar_length = doc["bar_length"]|1852;  
   config.archive_days= doc["archive_days"]|0;
-  config.Stat_screens_persist = config.Stat_screens;
-  config.GPIO12_screens = doc["GPIO12_screens"]|12;
-  config.GPIO12_screens_persist = config.GPIO12_screens; 
-  config.Board_Logo = doc["Board_Logo"]|1;
-  config.Sail_Logo = doc["Sail_Logo"]|1;
-  config.sleep_off_screen = doc["sleep_off_screen"]|11;
   config.logTXT=doc["logTXT"]|1;
   config.logUBX=doc["logUBX"]|1;
   config.logUBX_nav_sat=doc["logUBX_nav_sat"]|0;
@@ -244,31 +235,14 @@ void loadConfiguration(const char *filename, const char *filename_backup, Config
               Serial.println(config.logUBX);
               Serial.println(config.ssid);
               Serial.println(config.password);
-              Serial.println(config.Sail_Logo);
               }
-  RTC_Board_Logo=config.Board_Logo;//copy RTC memory !!
-  RTC_Sail_Logo=config.Sail_Logo;//copy to RTC memory !!
+
   calibration_bat=config.cal_bat;
   calibration_speed=config.cal_speed/1000;//3.6=km/h, 1.94384449 = knots, speed is now in mm/s
   time_out_nav_pvt=(1000/config.sample_rate+75);//max time out = 175 ms
-  RTC_SLEEP_screen=config.sleep_off_screen%10;
-  RTC_OFF_screen=config.sleep_off_screen/10%10;
-  //int Logo_choice=config.Logo_choice;//preserve value config.Logo_choice for config.txt update !!
-  int stat_screen=config.Stat_screens;//preserve value config
-  int GPIO_12_screens=config.GPIO12_screens;//preserve value config 
+
   if(config.file_date_time==0) config.logTXT=1;//because txt file is needed for generating new file count !!
-  for (int i=0;i<9;i++){
-        config.stat_screen[i]=stat_screen%10;//STATSx heeft geen offset !!! 641
-        stat_screen=stat_screen/10;
-        if(stat_screen>0){
-            config.screen_count=i+1;
-            }
-        config.gpio12_screen[i]=GPIO_12_screens%10;//
-        GPIO_12_screens=GPIO_12_screens/10;
-        if(GPIO_12_screens>0){
-            config.gpio12_count=i+1;
-            }
-       }
+ 
 }
 // Prints the content of a file to the Serial
 void printFile(const char *filename) {

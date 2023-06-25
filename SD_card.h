@@ -28,18 +28,13 @@ extern GPS_speed M100;
 extern GPS_speed M250;
 extern GPS_speed M1852;
 extern GPS_time S2;
-extern GPS_time s2;
 extern GPS_time S10;
-extern GPS_time s10;
 extern Alfa_speed A250;
 extern GPS_data Ublox; // create an object storing GPS_data, definition in RTOS
 extern GPS_SAT_info Ublox_Sat;//create an object storing GPS_SAT info !
 extern int nav_pvt_message_nr; 
 extern int nav_sat_message;
-extern int RTC_Board_Logo;
-extern int RTC_Sail_Logo;
-extern int RTC_SLEEP_screen;
-extern int RTC_OFF_screen;
+
 struct Config {
   float cal_bat=1.74;//calibration for read out bat voltage
   float cal_speed=3.6;//conversion m/s to km/h, for knots use 1.944
@@ -49,18 +44,18 @@ struct Config {
   int speed_large_font=1;//fonts on the first line are bigger, actual speed font is smaller
   int dynamic_model=0;//choice for dynamic model "Sea",if 0 model "portable" is used !!
   float timezone=1;//choice for timedifference in hours with UTC, for Belgium 1 or 2 (summertime)
-  int Stat_screens=123;//choice for stats field when no speed, here stat_screen 1, 2 and 3 will be active
-  int Stat_screens_time=4;//time between switching stat_screens
-  int GPIO12_screens=54;//choice for stats field when gpio12 is activated (pull-up high, low = active)
-  int Stat_screens_persist=123;//choice for stats field when no speed, here stat_screen 1, 2 and 3 will be active / for resave the config
-  int GPIO12_screens_persist=54;//choice for stats field when gpio12 is activated (pull-up high, low = active) / for resave the config
-  int Board_Logo=1;
-  int Sail_Logo=1;
-  int stat_screen[10];//which stat_screen you want to see ?
-  int gpio12_screen[10];//which stat_screen when gpio 12 toggles ?
-  int screen_count=0;
-  int gpio12_count=0;
-  int sleep_off_screen=11;
+  //int Stat_screens=123;//choice for stats field when no speed, here stat_screen 1, 2 and 3 will be active
+ // int Stat_screens_time=4;//time between switching stat_screens
+  //int GPIO12_screens=54;//choice for stats field when gpio12 is activated (pull-up high, low = active)
+  //int Stat_screens_persist=123;//choice for stats field when no speed, here stat_screen 1, 2 and 3 will be active / for resave the config
+ // int GPIO12_screens_persist=54;//choice for stats field when gpio12 is activated (pull-up high, low = active) / for resave the config
+ // int Board_Logo=1;
+ // int Sail_Logo=1;
+ // int stat_screen[10];//which stat_screen you want to see ?
+ // int gpio12_screen[10];//which stat_screen when gpio 12 toggles ?
+ // int screen_count=0;
+ // int gpio12_count=0;
+ // int sleep_off_screen=11;
   int stat_speed=1;//max speed in m/s for showing Stat screens
   int bar_length=1852;//choice for bar indicator for length of run in m (nautical mile)
   int archive_days=10; //how many days files will be moved to the "Archive" dir
@@ -92,8 +87,5 @@ void Session_info(GPS_data G);
 void Session_results_M(GPS_speed M);
 void Session_results_S(GPS_time S);
 void Session_results_Alfa(Alfa_speed A,GPS_speed M);
-/*
-void log_header_SBP(void);
-void log_SBP(void);
-*/
+
 #endif
