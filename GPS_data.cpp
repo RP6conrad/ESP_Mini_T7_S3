@@ -1,6 +1,6 @@
 #include "GPS_data.h"
 #include "Ublox.h"
-#include "ESP_Mini.h"
+#include "Definitions.h"
 
 uint16_t _gSpeed[BUFFER_SIZE]; 
 float _lat[BUFFER_ALFA]; 
@@ -356,7 +356,7 @@ int New_run_detection(float actual_heading, float S2_speed){
    #define MEAN_HEADING_TIME 15           //tijd in s voor berekening gemiddelde heading
    #define STRAIGHT_COURSE_MAX_DEV 10     //max hoek afwijking voor rechtdoor herkenning (graden)
    #define JIBE_COURSE_DEVIATION_MIN 50   //min hoek afwijking voor dettectie jibe (graden)
-
+   #define TIME_DELAY_NEW_RUN 10 //int time_delay_new_run
    static float old_heading,delta_heading,heading;
    static uint32_t delay_counter;
    static int run_counter;

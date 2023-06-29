@@ -1,5 +1,5 @@
 #include "Ublox.h"
-#include "ESP_Mini.h"
+#include "Definitions.h"
 int Time_Set_OK;
 UBXMessage ubxMessage = {000000000000};//definition here, declaration in ublox.h !!
 struct tm tmstruct ;
